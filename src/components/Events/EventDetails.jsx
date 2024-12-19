@@ -9,7 +9,7 @@ export default function EventDetails() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isPending, isError, error } = useQuery({
     queryKey: ["event", params.id],
     queryFn: ({ signal }) => fetchEvent({ id: params.id, signal }),
   });
@@ -17,7 +17,10 @@ export default function EventDetails() {
   const { mutate, isPending: isDeleting } = useMutation({
     mutationFn: () => deleteEvent({ id: params.id }),
     onSuccess: () => {
-      queryClient.invalidateQueries(["events"]);
+      queryClient.invalidateQueries({
+        queryKey: ["events"],
+        refetchType: "none",
+      });
       navigate("/events");
     },
     onError: (err) => {
@@ -25,10 +28,16 @@ export default function EventDetails() {
     },
   });
 
-  if (isLoading) return <p>Loading...</p>;
+  if (isPending) return <p>Loading...</p>;
   if (isError) return <p>Error: {error.message}</p>;
 
   if (!data) return <p>No data found</p>;
+
+  const formattedDate = new Date(data.date).toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 
   function handleDeleteEvent() {
     mutate();
@@ -53,11 +62,13 @@ export default function EventDetails() {
           </nav>
         </header>
         <div id="event-details-content">
-          <img src={`http://localhost:3000/${data.image}`} alt="image" />
+          <img src={`http://localhost:3000/${data.image}`} alt={data.title} />
           <div id="event-details-info">
             <div>
               <p id="event-details-location">{data.location}</p>
-              <time dateTime={`Todo-DateT$Todo-Time`}>{data.date}</time>
+              <time dateTime={`Todo-DateT$Todo-Time`}>
+                {formattedDate} - {data.time}
+              </time>
             </div>
             <p id="event-details-description">{data.description}</p>
           </div>
